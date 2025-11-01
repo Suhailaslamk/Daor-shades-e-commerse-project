@@ -10,7 +10,7 @@ export const CartProvider = ({ children }) => {
   const [wishlist, setWishlist] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const apiURL = "http://localhost:3001";
+  const apiURL = "https://daor-shades-e-commerse-project.onrender.com";
 
   useEffect(() => {
     const fetchData = async () => {

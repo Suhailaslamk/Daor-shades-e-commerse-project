@@ -11,7 +11,7 @@ export const ProductProvider= ({children}) =>{
 
 
   useEffect(()=> {
-    axios.get("http://localhost:3001/products")
+    axios.get("https://daor-shades-e-commerse-project.onrender.com/products")
     .then((res)=> setProducts(res.data))
     .catch((err)=> console.error("Error fetching products:", err.message))
   },[])

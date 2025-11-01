@@ -24,7 +24,7 @@ export default function ProductDetails() {
       setSelectedImage(found.image);
     } else {
       axios
-        .get(`http://localhost:3001/products/${id}`)
+        .get(`https://daor-shades-e-commerse-project.onrender.com/products/${id}`)
         .then((res) => {
           setProduct(res.data);
           setSelectedImage(res.data.image);
@@ -62,7 +62,7 @@ export default function ProductDetails() {
       const updatedStock = product.stock - quantity;
       setProduct({ ...product, stock: updatedStock });
 
-      await axios.patch(`http://localhost:3001/products/${product.id}`, {
+      await axios.patch(`https://daor-shades-e-commerse-project.onrender.com/products/${product.id}`, {
         stock: updatedStock,
       });
 

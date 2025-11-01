@@ -191,7 +191,7 @@ export default function Products() {
 
                     const updatedStock = product.stock - 1;
                     try {
-                      await axios.patch(`http://localhost:3001/products/${product.id}`, {
+                      await axios.patch(`https://daor-shades-e-commerse-project.onrender.com/products/${product.id}`, {
                         stock: updatedStock,
                       });
                       product.stock = updatedStock;

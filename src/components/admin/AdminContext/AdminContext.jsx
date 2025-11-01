@@ -10,7 +10,7 @@ export const AdminProvider = ({children}) => {
     const [users,setUsers]=useState([])
     const [orders,setOrders]=useState([])
 
-    const apiURL = "http://localhost:3001"
+    const apiURL = "https://daor-shades-e-commerse-project.onrender.com"
 
     const fetchProducts = async ()=> {
         try {

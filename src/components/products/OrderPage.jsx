@@ -21,7 +21,7 @@ export default function OrdersPage() {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`http://localhost:3001/orders?userId=${user.id}`);
+      const res = await axios.get(`https://daor-shades-e-commerse-project.onrender.com/orders?userId=${user.id}`);
       setOrders(res.data);
     } catch (err) {
       console.error(" Error fetching orders:", err);

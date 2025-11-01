@@ -29,7 +29,7 @@ export const AuthProvider =({children}) => {
 
        try{
          const existing = await axios.get(
-            `http://localhost:3001/users?email=${email}`
+            `https://daor-shades-e-commerse-project.onrender.com/users?email=${email}`
          )
 
          if (existing.data.length > 0){
@@ -38,7 +38,7 @@ export const AuthProvider =({children}) => {
          }
 
 
-         const res= await axios.post("http://localhost:3001/users",{
+         const res= await axios.post("https://daor-shades-e-commerse-project.onrender.com/users",{
             username,
             email,
             password,
@@ -60,7 +60,7 @@ export const AuthProvider =({children}) => {
     const login=async (email,password)=>{
         try{
             const res=await axios.get(
-                `http://localhost:3001/users?email=${email}&password=${password}`
+                `https://daor-shades-e-commerse-project.onrender.com/users?email=${email}&password=${password}`
             )
 
             if(res.data.length > 0){
