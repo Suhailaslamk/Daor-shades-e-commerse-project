@@ -1,273 +1,277 @@
 
-import { Heart, ShoppingCart } from "lucide-react";
+
+import { Heart, ShoppingCart, ChevronLeft, ChevronRight, SlidersHorizontal, Search, ShoppingBag, ChevronDown, ArrowRight, ArrowLeft } from "lucide-react";
 import { useProducts } from "../../context/prodcontxt";
-import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate ,useSearchParams } from "react-router-dom";
 import { useCart } from "../../context/cartcontext";
-import axios from "axios";
-import { toast } from "react-toastify";
 import { useAuth } from "../../context/authcontext";
+import { useWishlist } from "../../context/wishlistcontext";
+import { toast } from "react-toastify";
+import { motion, AnimatePresence } from "framer-motion";
+import AtelierSort from "../layout/AtelierSort";
+import api from "../../api/api";
 
 export default function Products() {
-  const { addToCart, toggleWishlist, isInWishlist } = useCart();
-  const { filteredProducts, category, setCategory } = useProducts();
-  const [currentPage, setCurrentPage] = useState(1);
-  const [searchParams, setSearchParams] = useSearchParams("");
-  const [sortFilter, setSortFilter] = useState(() => localStorage.getItem("sortFilter") || "");
-  const [savedCategory, setSavedCategory] = useState(() => localStorage.getItem("category") || category);
-  const [search, setSearch] = useState(() => localStorage.getItem("search") || "");
   const navigate = useNavigate();
+  const { products,search,setSort ,setSearch, category, setCategory,setPage,page,totalCount ,pageSize,loading } = useProducts();
+  const { addToCart ,cart} = useCart();
   const { user } = useAuth();
+  const { toggleWishlist, isInWishlist } = useWishlist();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlPage = Number(searchParams.get("page")) || 1;
+  const [categories, setCategories] = useState([])
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+ 
+const [selectedLabel, setSelectedLabel] = useState("Sort by");
 
-  const categories = ["All", "Prada", "Tommy Hilfigher", "Louis Vuitton", "Premium"];
-  const productsPerPage = 9;
+  const options = [
+    { label: "Price: Low to High", value: "price" },
+    { label: "Price: High to Low", value: "priceHighLow" },
+    { label: "Featured", value: "" },
+  ];
 
-  
-  useEffect(() => {
-    localStorage.setItem("category", savedCategory);
-    setCategory(savedCategory);
-  }, [savedCategory]);
+  const handleSelect = (option) => {
+    setSort(option.value);
+    setSelectedLabel(option.label);
+    setIsOpen(false);
+  };
+useEffect(() => {
+  setPage(urlPage);
+}, [urlPage]);
 
-  useEffect(() => {
-    localStorage.setItem("sortFilter", sortFilter);
-  }, [sortFilter]);
+useEffect(() => {
+  api.get("admin/categories").then(res => {
+    setCategories([{ id: null, name: "All" }, ...res.data.data]);
+  });
+}, []);
 
-  useEffect(() => {
-    localStorage.setItem("search", search);
-    setSearchParams({ search });
-  }, [search]);
+  const handleAddToCart = async (e, product) => {
+  e.stopPropagation();
+  if (!user) return navigate("/login");
+  const inCart = cart.find(item => item.productId === product.id);
+  const currentQty = inCart ? inCart.quantity : 0;
 
-  
-  let displayedProducts = filteredProducts.filter(
-    (product) =>
-      product.name.toLowerCase().includes(search.toLowerCase()) &&
-      (
-        savedCategory === "All" ||
-        product.category.toLowerCase() === savedCategory.toLowerCase() ||
-        (savedCategory === "Premium" && product.price === 299)
-      )
-  );
+  if (currentQty + 1 > product.stock) {
+    toast.error("Out of stock");
+    return;
+  }
 
-  
-  if (sortFilter === "priceLowHigh") displayedProducts.sort((a, b) => a.price - b.price);
-  else if (sortFilter === "priceHighLow") displayedProducts.sort((a, b) => b.price - a.price);
-  else if (sortFilter === "nameAZ") displayedProducts.sort((a, b) => a.name.localeCompare(b.name));
-  else if (sortFilter === "nameZA") displayedProducts.sort((a, b) => b.name.localeCompare(a.name));
-  else if (sortFilter === "under199") displayedProducts = displayedProducts.filter((p) => p.price <= 199);
-  else if (sortFilter === "under250") displayedProducts = displayedProducts.filter((p) => p.price <= 250);
-  else if (sortFilter === "under300") displayedProducts = displayedProducts.filter((p) => p.price <= 300);
+  try {
+    await addToCart(product.id, 1);
+    toast.success("Added to bag");
+  } catch (err) {
+    toast.error("Failed to add to bag");
+  }
+};
 
-  
-  const totalPages = Math.ceil(displayedProducts.length / productsPerPage);
-  const indexOfLast = currentPage * productsPerPage;
-  const indexOfFirst = indexOfLast - productsPerPage;
-  const paginatedProducts = displayedProducts.slice(indexOfFirst, indexOfLast);
+  const handleWishlist = (e, id)=> {
+    e.stopPropagation();
+    if (!user){
+      navigate("/login")
+      return ;
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search, savedCategory, sortFilter]);
+    }
+    
+    if (isInWishlist(id)) {
+    toggleWishlist(id);
+    toast.info("Removed from wishlist");
+  } else {
+    toggleWishlist(id);
+    toast.success("Added to wishlist");
+  }
+};
 
-  return (
-    <div className="min-h-screen bg-[#f5f5f0] text-gray-900 px-4 md:px-16 py-12 mt-16">
-      <h1 className="text-4xl md:text-5xl font-[Cinzel] tracking-[0.25em] text-center mb-10">
-        Our Collection
-      </h1>
 
-     
-      <div className="flex flex-wrap justify-center mb-8 gap-4">
-       
-        <div className="flex flex-wrap gap-2">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setSavedCategory(cat)}
-              className={`px-4 py-2 rounded-full border text-sm md:text-base transition-all duration-300 ${
-                savedCategory === cat
-                  ? "bg-gray-900 text-white border-gray-900"
-                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
 
-        
-        <div className="flex items-center gap-2 ">
-          <span className="text-gray-700 text-sm md:text-base">Sort & Filter:</span>
-          <select
-            value={sortFilter}
-            onChange={(e) => setSortFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-full bg-gray-800 text-white text-sm md:text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-800 transition"
-          >
-            <option value="">Default</option>
-            <optgroup label="Sort by Price">
-              <option value="priceLowHigh">Price: Low → High</option>
-              <option value="priceHighLow">Price: High → Low</option>
-            </optgroup>
-            <optgroup label="Sort by Name">
-              <option value="nameAZ">Name: A → Z</option>
-              <option value="nameZA">Name: Z → A</option>
-            </optgroup>
-            <optgroup label="Price Range">
-              <option value="under199">Under $199</option>
-              <option value="under250">Under $250</option>
-              <option value="under300">Under $300</option>
-            </optgroup>
-          </select>
-        </div>
-      </div>
-
+// 
+return (
+  <div className="min-h-screen bg-white pt-32 pb-40 selection:bg-black selection:text-white">
+    <div className="max-w-[1800px] mx-auto px-8 md:px-16 lg:px-24">
       
-      <div className="flex justify-center mb-10">
-        <input
-          type="text"
-          placeholder="Search products..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-md px-5 py-3 rounded-full border border-gray-300 bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-gray-800 text-gray-800 placeholder-gray-400"
-        />
-      </div>
-
-      
-      <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-3">
-        {paginatedProducts.map((product) => (
-          <div
-            key={product.id}
-            className="relative bg-white rounded-3xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group cursor-pointer"
-            onClick={() => navigate(`/products/${product.id}`)}
+      {/* 01. EDITORIAL HEADER */}
+      <header className="mb-32 relative">
+        <div className="flex flex-col items-center">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center gap-4 mb-6"
           >
-            
-            <button
-              className="absolute top-4 right-4 bg-white/70 backdrop-blur-sm rounded-full p-2 shadow hover:bg-white transition z-20"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (user) toggleWishlist(product);
-                else navigate("/login");
-              }}
-              aria-label={user ? "Toggle wishlist" : "Login to add to wishlist"}
-            >
-              <Heart
-                className={`w-5 h-5 transition ${
-                  user && isInWishlist(product.id)
-                    ? "text-red-500 fill-red-500"
-                    : "text-gray-700"
+            <span className="h-[1px] w-8 bg-zinc-200" />
+            <span className="text-[10px] uppercase tracking-[0.6em] text-zinc-400 font-bold">
+              The Archive
+            </span>
+            <span className="h-[1px] w-8 bg-zinc-200" />
+          </motion.div>
+          
+          <motion.h1 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+            className="text-6xl md:text-8xl lg:text-9xl font-serif text-zinc-900 tracking-tighter italic"
+          >
+            {categories.find(c => c.id === category)?.name || "All Pieces"}
+          </motion.h1>
+          
+          <div className="mt-12 flex items-center gap-8">
+            <span className="text-[11px] font-mono text-zinc-400 uppercase tracking-widest">
+              Available Units // {products.length}
+            </span>
+          </div>
+        </div>
+      </header>
+
+      {/* 02. TECHNICAL NAVBAR (Custom Dropdown Integration) */}
+      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-zinc-100 mb-24 py-8">
+        <div className="flex flex-col lg:flex-row justify-between items-center gap-12">
+          
+          {/* CATEGORY SELECTOR */}
+          <div className="flex items-center gap-10 overflow-x-auto no-scrollbar pb-2 lg:pb-0">
+            {categories.map((cat) => (
+              <button
+                key={cat.id ?? "all"}
+                onClick={() => { setCategory(cat.id); setPage(1); }}
+                className={`group relative text-[11px] uppercase tracking-[0.3em] transition-all ${
+                  category === cat.id ? "text-black font-black" : "text-zinc-400 hover:text-zinc-600"
                 }`}
-              />
-            </button>
+              >
+                {cat.name || "General"}
+                <span className={`absolute -bottom-2 left-0 h-[2px] bg-black transition-all duration-500 ${
+                  category === cat.id ? "w-full" : "w-0 group-hover:w-4"
+                }`} />
+              </button>
+            ))}
+          </div>
 
-            
-            <div className="w-full h-72 overflow-hidden z-10">
-              <img
-                src={product.image}
-                alt={product.name}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          {/* SEARCH & CUSTOM SORT */}
+          <div className="flex items-center gap-16">
+            {/* Search Input */}
+            <div className="flex items-center gap-4 group border-b border-transparent focus-within:border-zinc-900 transition-all pb-1">
+              <Search size={14} className="text-zinc-400 group-focus-within:text-black" strokeWidth={1.5} />
+              <input
+                value={search}
+                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                placeholder="Find a Silhouette..."
+                className="bg-transparent outline-none text-[12px] uppercase tracking-widest w-32 md:w-48 placeholder:text-zinc-300 font-light"
               />
             </div>
-
             
-            <div className="p-6 flex flex-col justify-between">
-              <div>
-                <h3 className="text-xl md:text-2xl font-semibold">{product.name}</h3>
-                <p className="text-gray-500 text-sm mt-1">{product.category || "New Arrival"}</p>
-                <p className="text-lg font-medium mt-2">${product.price}</p>
-                <p
-                  className={`text-sm font-medium ${
-                    product.stock > 0 ? "text-green-600" : "text-red-600"
-                  }`}
-                >
-                  {product.stock > 0 ? `${product.stock} in stock` : "Out of Stock"}
-                </p>
-              </div>
-
-              
-              <div className="flex gap-2 mt-4">
-                <button
-                  disabled={product.stock <= 0}
-                  onClick={async (e) => {
-                    e.stopPropagation();
-                    if (!user) return navigate("/login");
-                    if (product.stock <= 0) return toast.info("Out of stock");
-
-                    const updatedStock = product.stock - 1;
-                    try {
-                      await axios.patch(`https://daor-shades-e-commerse-project.onrender.com/products/${product.id}`, {
-                        stock: updatedStock,
-                      });
-                      product.stock = updatedStock;
-                      await addToCart({ ...product, quantity: 1 });
-                      toast.success(`Added ${product.name} to cart`);
-                    } catch (err) {
-                      console.error("Error updating stock:", err);
-                    }
-                  }}
-                  className={`flex items-center gap-2 flex-1 px-4 py-2 rounded-full text-sm md:text-base font-semibold transition-all duration-300 ${
-                    product.stock <= 0
-                      ? "bg-gray-400 text-white cursor-not-allowed"
-                      : "bg-gray-900 text-white hover:bg-gray-800"
-                  }`}
-                >
-                  <ShoppingCart size={18} />
-                  {product.stock <= 0 ? "Out of Stock" : "Add to Cart"}
-                </button>
-
-                <button
-                  disabled={product.stock <= 0}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (product.stock <= 0) return toast.info("Out of stock");
-                    navigate(`/products/${product.id}`);
-                  }}
-                  className={`flex-1 px-4 py-2 rounded-full text-sm md:text-base font-semibold transition-all duration-300 ${
-                    product.stock <= 0
-                      ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                      : "bg-gray-900 text-white hover:bg-blue-700"
-                  }`}
-                >
-                  Buy Now
-                </button>
-              </div>
+            {/* ATELIER CUSTOM SORT */}
+            <div className="relative">
+              <AtelierSort setSort={setSort} /> 
             </div>
           </div>
-        ))}
-      </div>
+        </div>
+      </nav>
 
-     
-      <div className="flex justify-center gap-2 mt-10 flex-wrap">
-        <button
-          disabled={currentPage === 1}
-          onClick={() => setCurrentPage((prev) => prev - 1)}
-          className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
-        >
-          Prev
-        </button>
-        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-          <button
-            key={page}
-            onClick={() => setCurrentPage(page)}
-            className={`px-4 py-2 rounded ${
-              currentPage === page
-                ? "bg-gray-900 text-white"
-                : "bg-gray-200 hover:bg-gray-300"
-            }`}
-          >
-            {page}
-          </button>
-        ))}
-        <button
-          disabled={currentPage === totalPages}
-          onClick={() => setCurrentPage((prev) => prev + 1)}
-          className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
-        >
-          Next
-        </button>
-      </div>
+      {/* 03. PRODUCT GALLERY */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-12 gap-y-32">
+        {loading ? (
+          Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="space-y-8 animate-pulse">
+              <div className="aspect-[3/4] bg-zinc-50" />
+              <div className="space-y-4">
+                <div className="h-2 bg-zinc-100 w-3/4" />
+                <div className="h-2 bg-zinc-50 w-1/2" />
+              </div>
+            </div>
+          ))
+        ) : (
+          products.map((item, index) => (
+            <motion.div
+              layout
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: (index % 4) * 0.1 }}
+              viewport={{ once: true }}
+              key={item.id}
+              className="group cursor-pointer"
+            >
+              {/* Product Visual */}
+              <div 
+                className="relative overflow-hidden aspect-[3/4] mb-10 bg-zinc-50"
+                onClick={() => navigate(`/products/${item.id}`)}
+              >
+                <img
+                  src={item.imageUrl}
+                  alt={item.name}
+                  className="w-full h-full object-cover transition-all duration-[1.5s] cubic-bezier(0.16, 1, 0.3, 1) grayscale-[0.2] group-hover:grayscale-0 group-hover:scale-110"
+                />
+                
+                {/* Wishlist Overlay */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleWishlist(e, item.id); }}
+                  className="absolute top-6 right-6 p-3 bg-white/80 backdrop-blur-md rounded-full opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500"
+                >
+                  <Heart
+                    size={16}
+                    strokeWidth={1}
+                    className={isInWishlist(item.id) ? "fill-black text-black" : "text-zinc-400"}
+                  />
+                </button>
 
-      {displayedProducts.length === 0 && (
-        <p className="text-center text-gray-500 mt-16 text-lg">
-          No products found matching your criteria.
-        </p>
+                {/* Add to Cart Drawer */}
+                <div className="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-transform duration-700 ease-[0.16,1,0.3,1]">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleAddToCart(e, item); }}
+                    disabled={item.stock <= 0}
+                    className="w-full bg-black text-white py-6 text-[10px] uppercase tracking-[0.4em] font-black hover:bg-zinc-800 transition-colors"
+                  >
+                    {item.stock > 0 ? "Commit to Cart" : "Sold Out"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Product Descriptor */}
+              <div className="space-y-4 px-2">
+                <div className="flex justify-between items-start">
+                  <div className="space-y-1">
+                    <h3 className="text-[12px] uppercase tracking-[0.2em] font-black text-zinc-900 group-hover:underline decoration-zinc-200 underline-offset-8">
+                      {item.name}
+                    </h3>
+                    <p className="text-[10px] uppercase tracking-widest text-zinc-400 font-medium">
+                      {item.categoryName}
+                    </p>
+                  </div>
+                  <p className="text-[13px] font-mono text-zinc-900">
+                    ₹{item.price.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          ))
+        )}
+      </div>
+      
+      {/* 04. MINIMALIST PAGINATION */}
+      {!loading && (
+        <footer className="mt-48 pt-20 border-t border-zinc-100 flex flex-col items-center gap-12">
+          <div className="flex items-center gap-20">
+            <button
+              disabled={page <= 1}
+              onClick={() => setSearchParams({ page: page - 1 })}
+              className="group flex items-center gap-4 text-[11px] uppercase tracking-[0.4em] disabled:opacity-20 transition-all"
+            >
+              <div className="h-[1px] w-8 bg-zinc-900 group-hover:w-16 transition-all" />
+              Prev
+            </button>
+
+            <span className="text-[10px] font-mono text-zinc-400 uppercase">
+              Section {page} / {totalPages}
+            </span>
+
+            <button
+              disabled={page >= totalPages}
+              onClick={() => setSearchParams({ page: page + 1 })}
+              className="group flex items-center gap-4 text-[11px] uppercase tracking-[0.4em] disabled:opacity-20 transition-all"
+            >
+              Next
+              <div className="h-[1px] w-8 bg-zinc-900 group-hover:w-16 transition-all" />
+            </button>
+          </div>
+        </footer>
       )}
     </div>
-  );
+  </div>
+);
 }

@@ -1,103 +1,231 @@
-import axios from "axios";
-import { createContext, useState,useContext, useEffect } from "react";
-
- const AuthContext = createContext();
-
-export const AuthProvider =({children}) => {
-
-
-    const [user,setUser]=useState(null)
-    const [error,setError]=useState("")
-
-
-
- useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-  }, []);
 
 
 
 
-    const signup = async (username, email, password) => {
-        if(!username || !password || !email){
-            setError("Invalid email or password.");
-            return false
-        }
-
-       try{
-         const existing = await axios.get(
-            `https://daor-shades-e-commerse-project.onrender.com/users?email=${email}`
-         )
-
-         if (existing.data.length > 0){
-            setError("User already exists. Try logging in.");
-            return false;
-         }
-
-
-         const res= await axios.post("https://daor-shades-e-commerse-project.onrender.com/users",{
-            username,
-            email,
-            password,
-         })
-
-        setUser(res.data)
-        setError("")
-        return true;
-
-       } catch (err){
-        console.error("Signup error:", err.message)
-        setError("Signup failed. Try again.");
-         return false;
-       }
-    }
 
 
 
-    const login=async (email,password)=>{
-        try{
-            const res=await axios.get(
-                `https://daor-shades-e-commerse-project.onrender.com/users?email=${email}&password=${password}`
-            )
+// import { createContext, useContext, useEffect, useState } from "react";
+// import api from "../api/api";
 
-            if(res.data.length > 0){
-                 const loggedUser = res.data[0];
-               setUser(loggedUser);
-               localStorage.setItem("user", JSON.stringify(loggedUser)); 
-      setError("");
-                return true;
-            }else{
-                setError("Invalid email or password.");
-        return false;
+// const AuthContext = createContext();
+// export const useAuth = () => useContext(AuthContext);
 
-            }
-        } catch (err){
-             console.error("Login error:", err.message);
-      setError("Login failed. Try again.");
-      return false;
-        }
-    }
-       
+// export const AuthProvider = ({ children }) => {
+//   const [user, setUser] = useState(null);
+//   const [accessToken, setAccessToken] = useState(
+//     localStorage.getItem("accessToken")
+//   );
+//   const [loading, setLoading] = useState(true);
+//   const [error, setError] = useState(null);
+  
+//   const fetchMe = async () => {
+//     try {
+//       const res = await api.get("/auth/me");
+//       setUser(res.data.data);
+//     } catch {
+//       setUser(null);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
 
-    const logout =()=> {
-        setUser(null)
-        localStorage.removeItem("user");
-       
-    }
+//   const signup = async (fullName, email, password) => {
+//     try {
+//       setError(null);
+//       await api.post("/auth/register", { fullName, email, password });
+//       return true;
+//     } catch (err) {
+//       setError(err.response?.data?.message || "Signup failed");
+//       return false;
+//     }
+//   };
+
+//   const login = async (email, password) => {
+//     try {
+//       setError(null);
+//       const res = await api.post("/auth/login", { email, password });
+
+//       const token = res.data.data.accessToken;
+//       localStorage.setItem("accessToken", token);
+//       setAccessToken(token);
+
+//       return true;
+//     } catch (err) {
+//       setError(err.response?.data?.message || "Invalid email or password");
+//       return false;
+//     }
+//   };
+
+//   const logout = async () => {
+//     try {
+//       await api.post("/auth/logout");
+//     } catch {}
+//     setUser(null);
+//     setAccessToken(null);
+//     localStorage.removeItem("accessToken");
+//   };
+
+//   useEffect(() => {
+//     if (accessToken) {
+//       fetchMe();
+//     } else {
+//       setLoading(false);
+//     }
+//   }, [accessToken]);
+
+//   return (
+//     <AuthContext.Provider
+//       value={{ user, login, logout, signup, loading, error }}
+//     >
+//       {children}
+//     </AuthContext.Provider>
+//   );
+// };
 
 
 
 
-return (
 
-    <AuthContext.Provider 
-    value={{user,login,logout,signup,error }} >
-    {children}
+import { createContext, useContext, useEffect, useState } from "react";
+import api from "../api/api";
 
-    </AuthContext.Provider>
-)
-}
+const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
+
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [accessToken, setAccessToken] = useState(
+    localStorage.getItem("accessToken")
+  );
+  const [loading, setLoading] = useState(true); // 🔑 auth-resolve flag
+  const [error, setError] = useState(null);
+
+  // 🔥 ONLY place loading is handled
+// const fetchMe = async () => {
+//   try {
+//     const res = await api.get("/auth/me");
+//     setUser(res.data.data);
+//   } catch {
+//      const status = err.response?.status;
+//     setUser(null);
+//     localStorage.removeItem("accessToken");
+//     setAccessToken(null);
+
+//     if (status === 403) {
+//       // 👇 MARK BLOCKED STATE
+//       setUser({ blocked: true });
+//     }
+//   } finally {
+//     setLoading(false); // ✅ ALWAYS ends loading
+//   }
+// };
+
+
+
+const fetchMe = async () => {
+  try {
+    const res = await api.get("/auth/me");
+    setUser(res.data.data);
+  } catch {
+    setUser(null);
+    localStorage.removeItem("accessToken");
+    setAccessToken(null);
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+  const signup = async (fullName, email, password) => {
+    try {
+      setError(null);
+      await api.post("/auth/register", { fullName, email, password });
+      return true;
+    } catch (err) {
+      setError(err.response?.data?.message || "Signup failed");
+      return false;
+    }
+  };
+
+
+
+const login = async (email, password) => {
+  try {
+    setError(null);
+    const res = await api.post("/auth/login", { email, password });
+
+    const token = res.data.data.accessToken;
+    localStorage.setItem("accessToken", token);
+    setAccessToken(token);
+
+    return { success: true };
+  } catch (err) {
+
+    const status = err.response?.status;
+
+     if (status === 403) {
+      // 🚫 BLOCKED USER
+      return {
+        success: false,
+        blocked: true,
+        message: err.response?.data?.message || "Your account has been blocked",
+      };
+  }
+  if (status === 401) {
+      return {
+        success: false,
+        blocked: false,
+        message: "Invalid email or password",
+      };
+    }
+    return {
+      success: false,
+      blocked: false,
+      message: "Login failed",
+    };
+  }
+};
+  const logout = async () => {
+    try {
+      await api.post("/auth/logout");
+    } catch {}
+    setUser(null);
+    setAccessToken(null);
+    localStorage.removeItem("accessToken");
+  };
+
+  useEffect(() => {
+  if (accessToken) {
+    fetchMe();
+  } else {
+    setLoading(false); // ✅ no token → no loading
+  }
+}, [accessToken]);
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        accessToken,
+        loading,     // ✅ DO NOT rename (used by your code)
+        login,
+        logout,
+        signup,
+        error,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+
+
+
+
+
+
+
+
+

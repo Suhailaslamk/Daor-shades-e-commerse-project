@@ -8,6 +8,7 @@ import { CartProvider } from './context/cartcontext.jsx'
 import {ToastContainer} from "react-toastify"
 import "react-toastify/dist/ReactToastify.css";
 import { BrowserRouter } from 'react-router-dom'
+import { WishlistProvider } from './context/wishlistcontext.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -15,21 +16,35 @@ createRoot(document.getElementById('root')).render(
     <ProductProvider>
       <AuthProvider>
         <CartProvider>
-          <ToastContainer
-        position="top-center"
+           <WishlistProvider>
+          {/* <ToastContainer
+        position="bottom-right"
         autoClose={3000}
-        hideProgressBar={false}
+        hideProgressBar={true}
         newestOnTop={true}
         closeOnClick
         rtl={false}
         pauseOnFocusLoss
         draggable
         pauseOnHover
-      />
+      /> */}
+      <ToastContainer
+  position="bottom-right"
+  autoClose={4000}
+  hideProgressBar
+  newestOnTop
+  closeOnClick
+  pauseOnFocusLoss
+  draggable
+  pauseOnHover
+  theme="light" // We will override this with CSS
+  toastClassName="custom-toast"
+/>
       
     <App />
-
+</WishlistProvider>
     </CartProvider>
+    
     </AuthProvider>
     </ProductProvider>
     </BrowserRouter>

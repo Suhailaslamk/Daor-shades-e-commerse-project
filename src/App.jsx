@@ -27,12 +27,12 @@ import AdminOrders from "./components/admin/AdminOrders.jsx";
 import NotFound from "./components/layout/NotFound.jsx";
 import ProtectedRoute from "./components/authentication/ProtectedRoute.jsx";
 import Unauthorized from "./components/layout/unAuthorised.jsx";
-
-
-
-
-
-
+import ShippingAddressPage from "./components/products/ShippingAddressPage.jsx";
+import AdminOrderDetails from "./components/admin/AdminOrderDetails.jsx";
+import PublicRoute from "./components/authentication/PublicRoute.jsx";
+import Blocked from "./components/authentication/Blocked.jsx";
+import NotificationBell from "./components/layout/NotificationBell.jsx";
+import AdminCategories from "./components/admin/categories/AdminCategories.jsx";
 
 export default function App(){
 const location=useLocation()
@@ -40,58 +40,48 @@ const location=useLocation()
 const hideNavbarRoutes=['/login','/signup','/admin']
 const shouldHideNavbar = hideNavbarRoutes.some((route)=> location.pathname.startsWith(route))
   return (
-   
-
 <>
    {! shouldHideNavbar && <Navbar />}
 
 <ScrollToTop />
-
-
 <AdminProvider>
 <Routes>
-
-
-  
 <Route path="/" element={<Home />} />
-  <Route path="/products" element={<Products />} />
-  <Route path='/signup' element={<Signup/>} />
-  <Route path='/Login' element={ <Login />} />
-  <Route path="/about" element={<About />} />
-  <Route path="/products/:id" element={<ProductDetails />} />
+<Route path="/blocked" element={<Blocked />} />
+<Route path="/products" element={<Products />} />
+<Route element={<PublicRoute />}>
+  <Route path="/login" element={<Login />} />
+  <Route path="/signup" element={<Signup />} />
+</Route>
+<Route path="/about" element={<About />} />
+<Route path="/products/:id" element={<ProductDetails />} />
+<Route element={<ProtectedRoute />}>
   <Route path="/cart" element={<CartPage />} />
-  <Route path='/payment' element={<PaymentPage />} />
-  <Route path='/order-confirmed' element={<OrderConfirmed />} />
-<Route path="/wishlist" element={<WishlistPage />} />
-<Route path="/user-details" element={<UserDetails />} />
-<Route path="/orders-page" element={<OrdersPage />} />
-
-
-  
- <Route element={<ProtectedRoute adminOnly={true} />}>
-
+    <Route path="/notification" element={<NotificationBell />} />
+  <Route path="/wishlist" element={<WishlistPage />} />
+  <Route path="/orders-page" element={<OrdersPage />} />
+  <Route path="/shipping-address" element={<ShippingAddressPage />} />
+  <Route path="/payment" element={<PaymentPage />} />
+  <Route path="/order-confirmed" element={<OrderConfirmed />} />
+  <Route path="/user-details" element={<UserDetails />} />
+</Route>
+<Route element={<ProtectedRoute adminOnly={true} />}>
+<Route path="/admin/categories" element={<AdminCategories />} />
 <Route path="/admin" element={<AdminDashboard />} >
 <Route path="products" element={ <AdminProducts /> } />
 <Route path="users" element={ <AdminUsers />} />
-<Route  path="users/:id" element={<AdminUserDetails />} />
+<Route path="users/:id" element={<AdminUserDetails />} />
 <Route index element={ <AdminHome /> } />
 <Route path="orders" element={<AdminOrders />} />
+<Route path="orders/:id" element={<AdminOrderDetails />} />
 </Route>
 </Route>
 <Route path="/unauthorized" element={<Unauthorized />} />
- <Route path="*" element={<NotFound />} />
-
-</Routes>
- 
-
-     
+<Route path="*" element={<NotFound />} />
+</Routes>  
 </AdminProvider> 
-
 {! shouldHideNavbar && <Footer /> } 
 
  </>
-
-
-
   )
 }

@@ -1,40 +1,83 @@
 import { createContext ,useContext,useState,useEffect} from "react";
-import axios from "axios";
+import api from "../api/api";
 
 
 const ProductContext=createContext()
 
-export const ProductProvider= ({children}) =>{
+export const ProductProvider = ({ children }) => {
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [category, setCategory] = useState(null);
+  const [sort, setSort] = useState("");
+  const [totalCount, setTotalCount] = useState(0);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const pageSize = 12;
 
-       const [products,setProducts]=useState([])
-       const [category,setCategory]=useState("All")
+  const fetchProducts = async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
 
+      
+        if (search) params.append("Search", search);
+          params.append("Page", page);
+          params.append("PageSize", pageSize);
+       if (category !== null)
+  params.append("CategoryId", category);
+        
+      if (sort) params.append("SortBy", "price");
+      if (sort === "priceHighLow") params.append("Descending", "true");
 
-  useEffect(()=> {
-    axios.get("https://daor-shades-e-commerse-project.onrender.com/products")
-    .then((res)=> setProducts(res.data))
-    .catch((err)=> console.error("Error fetching products:", err.message))
-  },[])
+      const res = await api.get(`/products/filter-sort?${params.toString()}`);
+      setProducts(res.data.data);
+            setLoading(false);
 
+setTotalCount(res.data.totalCount);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
 
- const filteredProducts=category==="All"
- ? products
-      : products.filter((p) =>  p.category  === category   ||  p.category1  === category );
+  // const filteredProducts = products
+  // .filter(p =>
+  //   p.name.toLowerCase().includes(search.toLowerCase())
+  // )
+
+  useEffect(() => {
+  fetchProducts();
+}, [category, sort, search, page]); 
+
+  
 
 return (
     <ProductContext.Provider
     value={{
+        // products : filteredProducts,
         products,
-        filteredProducts,
+        loading,
         category,
         setCategory,
+        setSort,
+        search,
+        setSearch ,
+        setPage,
+        page,
+        totalCount,
+
+
+
+
     }}>
         {children}
     </ProductContext.Provider>
     
 )
 
-}
 
+}
 
 export const useProducts = () => useContext(ProductContext);

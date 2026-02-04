@@ -30,54 +30,7 @@
       "date": "2025-10-22T11:23:24.745Z"
     }
   ],
-  "users": [
-    {
-      "id": "3c0f",
-      "username": "suhail aslam",
-      "email": "suhailaslam81@gmail.com",
-      "password": "suhail2004",
-      "role": "admin",
-      "isBlocked": false
-    },
-    {
-      "id": "7384",
-      "username": "gggggg",
-      "email": "nihhallaslamm@gmail.com",
-      "password": "suhail2004",
-      "isBlocked": false,
-      "role": "user"
-    },
-    {
-      "id": "0179",
-      "username": "Mohammed Ihsan",
-      "email": "mdihsan0010@gmail.com",
-      "password": "1627",
-      "isBlocked": false,
-      "role": "user"
-    },
-    {
-      "id": "07ef",
-      "username": "suhail",
-      "email": "suhail@gmail.com",
-      "password": "asdfASDF",
-      "isBlocked": false,
-      "role": "user"
-    },
-    {
-      "id": "65b2",
-      "username": "suhail aslam",
-      "email": "suhailaslam1@gmail.com",
-      "password": "suhail44",
-      "isBlocked": false,
-      "role": "user"
-    },
-    {
-      "id": "3f51",
-      "username": "nihal",
-      "email": "nihaalaslam@gmail.com",
-      "password": "2004"
-    }
-  ],
+  
   "products": [
     {
       "id": "1",

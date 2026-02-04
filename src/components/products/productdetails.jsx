@@ -1,185 +1,242 @@
 
+
 import { useParams, useNavigate } from "react-router-dom";
 import { useProducts } from "../../context/prodcontxt";
 import { useCart } from "../../context/cartcontext";
 import { useAuth } from "../../context/authcontext";
+import { useWishlist } from "../../context/wishlistcontext";
 import { useEffect, useState } from "react";
-import axios from "axios";
+import { motion } from "framer-motion";
+import { ArrowLeft, ShoppingBag, Heart, Info, Globe, Shield } from "lucide-react";
+import api from "../../api/api";
 import { toast } from "react-toastify";
 
 export default function ProductDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { products } = useProducts();
-  const { addToCart, buyNow, toggleWishlist, cart } = useCart();
+const { cart, addToCart } = useCart()
+  const { toggleWishlist, isInWishlist } = useWishlist();
   const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [product, setProduct] = useState(null);
   const [selectedImage, setSelectedImage] = useState("");
-  const [quantity, setQuantity] = useState(1);
 
   useEffect(() => {
-    const found = products.find((p) => p.id === parseInt(id));
-    if (found) {
-      setProduct(found);
-      setSelectedImage(found.image);
-    } else {
-      axios
-        .get(`https://daor-shades-e-commerse-project.onrender.com/products/${id}`)
-        .then((res) => {
-          setProduct(res.data);
-          setSelectedImage(res.data.image);
-        })
-        .catch((err) => console.error("Error fetching product:", err));
-    }
-  }, [id, products]);
-
-  if (!product)
-    return <p className="text-center text-gray-600 p-10">Loading product...</p>;
-
-  const imageList = [
-    product.image,
-    product.image1,
-    product.image2,
-    product.image3,
-    product.hover,
-  ].filter(Boolean);
-
-  const handleAddToCart = async () => {
-    if (!user) {
-      toast.info("Please login to add items to cart!");
-      navigate("/login");
-      return;
-    }
-
-    if (quantity > product.stock) {
-      toast.error("Cannot add more than available stock!");
-      return;
-    }
-
+  const fetchProductDetails = async () => {
     try {
-      await addToCart(product, quantity);
+      setLoading(true);
+      setError(false);
 
-      const updatedStock = product.stock - quantity;
-      setProduct({ ...product, stock: updatedStock });
+      const res = await api.get(`/products/${id}`);
+      const data = res.data.data;
 
-      await axios.patch(`https://daor-shades-e-commerse-project.onrender.com/products/${product.id}`, {
-        stock: updatedStock,
-      });
-
-      toast.success(`${quantity} item(s) added to cart`);
-      setQuantity(1);
+      setProduct(data);
+      setSelectedImage(data.imageUrl);
     } catch (err) {
       console.error(err);
+      setError(true);
+      toast.error("Product not found");
+      navigate("/products");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleWishlist = () => {
-    if (!user) {
-      toast.info("Please login to add items to wishlist!");
-      navigate("/login");
-      return;
-    }
-    toggleWishlist(product);
-  };
+  fetchProductDetails();
+}, [id, navigate]);
 
-  const cartItem = cart.find((c) => c.productId === product.id);
-  const inCartQty = cartItem?.quantity || 0;
 
+if (loading) {
   return (
-    <div className="min-h-screen bg-[#f5f5f0] text-gray-900 flex flex-col lg:flex-row gap-10 px-8 md:px-20 py-16 mt-10">
-      <div className="lg:w-1/2 flex gap-4">
-        <div className="hidden md:flex flex-col gap-3 overflow-y-auto h-[80vh] pr-2">
-          {imageList.map((img, index) => (
-            <img
-              key={index}
-              src={img}
-              alt={`Product ${index}`}
-              onClick={() => setSelectedImage(img)}
-              className={`w-24 h-24 object-cover rounded-xl cursor-pointer border ${
-                selectedImage === img
-                  ? "border-gray-900"
-                  : "border-transparent hover:border-gray-400"
-              }`}
-            />
-          ))}
-        </div>
-
-        <div className="flex-1 flex items-center justify-center">
-          <img
-            src={selectedImage}
-            alt={product.name}
-            className="w-full max-h-[80vh] object-cover rounded-3xl shadow-md"
-          />
-        </div>
+    <div className="min-h-screen flex items-center justify-center bg-[#F0F0F0]">
+      <div className="animate-pulse space-y-6 w-full max-w-4xl bg-white p-10">
+        <div className="h-96 bg-zinc-200" />
+        <div className="h-6 bg-zinc-200 w-1/2" />
+        <div className="h-4 bg-zinc-200 w-1/3" />
       </div>
-
-      <div className="lg:w-1/2 flex flex-col justify-start lg:sticky lg:top-24 space-y-6">
-        <h1 className="text-4xl font-[Cinzel]">{product.name}</h1>
-        <p className="text-gray-500 text-lg">{product.category}</p>
-        <p className="text-3xl font-semibold">${product.price}</p>
-        <p className="text-gray-700 leading-relaxed">{product.description}</p>
-
-        <div className="flex items-center gap-4">
-          <p className="text-gray-600 text-sm">
-            Stock:{" "}
-            <span
-              className={`font-semibold ${
-                product.stock > 0 ? "text-green-600" : "text-red-600"
-              }`}
-            >
-              {product.stock > 0
-                ? `${product.stock} available`
-                : "Out of stock"}
-            </span>
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <label className="text-gray-700 text-sm">Quantity:</label>
-          <input
-            type="number"
-            min="1"
-            max={product.stock}
-            value={quantity}
-            onChange={(e) => setQuantity(parseInt(e.target.value))}
-            className="w-20 text-center border border-gray-300 rounded-md py-1"
-          />
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-4 mt-4">
-          <button
-            onClick={handleAddToCart}
-            disabled={product.stock <= 0}
-            className={`flex-1 py-3 rounded-full transition ${
-              product.stock <= 0
-                ? "bg-gray-400 text-white cursor-not-allowed"
-                : "bg-gray-900 text-white hover:bg-gray-800"
-            }`}
-          >
-            {inCartQty > 0 ? `${inCartQty} in cart` : "Add to Cart"}
-          </button>
-
-          <button
-            onClick={handleWishlist}
-            disabled={product.stock <= 0}
-            className={`flex-1 py-3 rounded-full border transition ${
-              product.stock <= 0
-                ? "bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed"
-                : "bg-white border-gray-900 text-gray-900 hover:bg-gray-100"
-            }`}
-          >
-            Add To Wishlist
-          </button>
-        </div>
-
+    </div>
+  );
+}
+if (error) {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="text-center space-y-6">
+        <p className="text-zinc-500 uppercase tracking-widest text-sm">
+          Product not available
+        </p>
         <button
-          onClick={() => navigate(-1)}
-          className="mt-4 py-2 px-4 border rounded-lg bg-gray-200 hover:bg-gray-300"
+          onClick={() => navigate("/products")}
+          className="text-xs uppercase tracking-widest border-b border-black pb-1"
         >
-          Go back
+          Back to Collection
         </button>
       </div>
     </div>
   );
 }
 
+const handleAddToCart = async () => {
+  if (!user) {
+    navigate("/login");
+    return;
+  }
+
+  const inCart = cart.find(item => item.productId === product.id); // use productId
+  const currentQty = inCart ? inCart.quantity : 0;
+
+  if (currentQty + 1 > product.stock) {
+    toast.error("Out of stock");
+    return;
+  }
+
+  try {
+    await addToCart(product.id, 1);
+    toast.success("Added to bag!");
+  } catch (err) {
+    toast.error("Failed to add to bag");
+  }
+};
+
+
+const handleWishlistToggle = () => {
+  if (!user) {
+    navigate("/login");
+    return;
+  }
+
+  toggleWishlist(product.id);
+
+  // check the current state **after toggling**
+  const inWishlist = isInWishlist(product.id);
+  toast[inWishlist ? "info" : "success" ](
+    inWishlist ?  "Removed from wishlist" : "Added to wishlist" 
+  );
+};
+  
+  
+
+  return (
+  <div className="min-h-screen bg-[#F4F4F5] flex items-center justify-center p-6 md:p-12 font-sans selection:bg-zinc-200">
+    
+    {/* THE COMPACT PRODUCT CARD */}
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+      className="bg-white w-full max-w-5xl rounded-[2rem] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.08)] overflow-hidden flex flex-col md:flex-row border border-white"
+    >
+      
+      {/* LEFT: IMAGE SECTION */}
+      <div className="md:w-1/2 relative bg-[#F9F9F9] group">
+        <button 
+          onClick={() => navigate(-1)}
+          className="absolute top-6 left-6 z-20 w-10 h-10 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center shadow-sm hover:bg-black hover:text-white transition-all duration-300"
+        >
+          <ArrowLeft size={16} />
+        </button>
+
+        <div className="h-[45vh] md:h-[70vh] w-full overflow-hidden">
+          <motion.img 
+            key={selectedImage}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+            src={selectedImage} 
+            className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+            alt={product.name}
+          />
+        </div>
+
+        {/* Thumbnail Selector */}
+        <div className="absolute bottom-6 left-6 flex gap-2">
+          {[product.imageUrl || product.image, product.image1, product.image2].filter(Boolean).map((img, i) => (
+            <button 
+              key={i}
+              onMouseEnter={() => setSelectedImage(img)}
+              className={`w-12 h-16 rounded-lg overflow-hidden border-2 transition-all duration-300 ${
+                selectedImage === img ? "border-black scale-105 shadow-lg" : "border-transparent opacity-60"
+              }`}
+            >
+              <img src={img} className="w-full h-full object-cover" />
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* RIGHT: CONTENT SECTION */}
+      <div className="md:w-1/2 p-10 md:p-14 flex flex-col justify-between bg-white">
+        
+        <div className="space-y-10">
+          {/* Brand & Title */}
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-[10px] uppercase tracking-[0.4em] text-zinc-400 font-bold">
+                {product.categoryName || "Atelier Limited"}
+              </span>
+              <button 
+                onClick={handleWishlistToggle}
+                className="w-10 h-10 rounded-full border border-zinc-100 flex items-center justify-center hover:bg-zinc-50 transition-colors"
+              >
+                <Heart 
+                  size={18} 
+                  className={isInWishlist(product.id) ? "fill-red-500 text-red-500" : "text-zinc-300"} 
+                />
+              </button>
+            </div>
+            <h1 className="text-4xl font-serif italic tracking-tight text-zinc-900 leading-tight">
+              {product.name}
+            </h1>
+            <p className="text-2xl font-light text-zinc-800 tracking-tighter">
+              ₹{product.price.toLocaleString()}
+            </p>
+          </div>
+
+          {/* Description */}
+          <div className="space-y-4">
+             <p className="text-[11px] uppercase tracking-widest text-zinc-400 font-bold">Details</p>
+             <p className="text-sm leading-relaxed text-zinc-500 font-light">
+               {product.description || "A masterclass in silhouette and form. This piece features hand-selected materials and a tailored fit designed for the modern avant-garde wardrobe."}
+             </p>
+          </div>
+
+          {/* Specs Bar */}
+          <div className="flex items-center gap-8 py-6 border-y border-zinc-50">
+            <div className="flex flex-col gap-1">
+              <span className="text-[8px] uppercase tracking-tighter text-zinc-400">Inventory</span>
+              <span className={`text-[10px] font-bold uppercase ${product.stock > 0 ? 'text-zinc-900' : 'text-rose-500'}`}>
+                {product.stock > 0 ? `${product.stock} Available` : 'Waitlist'}
+              </span>
+            </div>
+            <div className="w-[1px] h-6 bg-zinc-100" />
+            <div className="flex flex-col gap-1">
+              <span className="text-[8px] uppercase tracking-tighter text-zinc-400">Shipping</span>
+              <span className="text-[10px] font-bold uppercase text-zinc-900 italic">Complimentary</span>
+            </div>
+          </div>
+        </div>
+
+        {/* CTA Section */}
+        <div className="mt-12 space-y-4">
+          <button
+            onClick={handleAddToCart}
+            disabled={product.stock <= 0}
+            className="w-full bg-zinc-900 text-white py-5 rounded-2xl flex items-center justify-center gap-3 hover:bg-black transition-all duration-300 active:scale-[0.98] shadow-[0_20px_40px_-10px_rgba(0,0,0,0.2)] disabled:bg-zinc-200 disabled:text-zinc-400 disabled:shadow-none"
+          >
+            <ShoppingBag size={18} />
+            <span className="text-[11px] uppercase tracking-[0.3em] font-black">
+              {product.stock > 0 ? "Add to Bag" : "Notify Me"}
+            </span>
+          </button>
+          
+          <p className="text-center text-[9px] uppercase tracking-[0.2em] text-zinc-400">
+            Secure checkout & 14-day returns
+          </p>
+        </div>
+
+      </div>
+    </motion.div>
+  </div>
+);
+}
